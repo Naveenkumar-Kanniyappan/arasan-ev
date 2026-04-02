@@ -7,11 +7,21 @@ import os
 app = Flask(__name__)
 app.secret_key = 'arasan_ev_crm_secret_2026'
 
+# DB_CONFIG = {
+#     'host': 'localhost',
+#     'user': 'root',
+#     'password': 'Welcome@123',
+#     'db': 'arasan',
+#     'charset': 'utf8mb4',
+#     'cursorclass': pymysql.cursors.DictCursor,
+#     'autocommit': True
+# }
+
 DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'Welcome@123',
-    'db': 'arasan',
+    'host': os.environ.get('DB_HOST'),
+    'user': os.environ.get('DB_USER'),
+    'password': os.environ.get('DB_PASSWORD'),
+    'db': os.environ.get('DB_NAME'),
     'charset': 'utf8mb4',
     'cursorclass': pymysql.cursors.DictCursor,
     'autocommit': True
@@ -797,5 +807,8 @@ def api_vehicle_price(vid):
     db.close()
     return jsonify(v or {})
 
+# if __name__ == '__main__':
+#     app.run(debug=True, port=5000)
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
