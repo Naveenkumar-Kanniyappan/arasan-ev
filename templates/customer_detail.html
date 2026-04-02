@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block page_title %}Customer Details{% endblock %}
+{% block topbar_actions %}
+<a href="{{ url_for('customers') }}" class="btn btn-secondary"><i class="fa fa-arrow-left"></i> Back</a>
+<a href="{{ url_for('edit_customer', cid=customer.id) }}" class="btn btn-primary"><i class="fa fa-pen"></i> Edit</a>
+{% endblock %}
+{% block content %}
+<div class="grid-2 section-gap">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Customer Information</span></div>
+    <div style="padding:24px;">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+        <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:24px;color:#000;">{{ customer.name[0].upper() }}</div>
+        <div>
+          <h3 style="margin:0;font-family:'Syne',sans-serif;font-size:20px;font-weight:800;">{{ customer.name }}</h3>
+          <p style="margin:4px 0 0 0;color:var(--muted);">{{ customer.email }}</p>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div><strong>Phone:</strong> {{ customer.phone or '—' }}</div>
+        <div><strong>Gender:</strong> {{ customer.gender.title() if customer.gender else '—' }}</div>
+        <div><strong>DOB:</strong> {{ customer.dob.strftime('%d %b %Y') if customer.dob else '—' }}</div>
+        <div><strong>Joined:</strong> {{ customer.created_at.strftime('%d %b %Y') if customer.created_at else '—' }}</div>
+      </div>
+      {% if customer.address %}
+      <div style="margin-top:16px;">
+        <strong>Address:</strong><br>
+        {{ customer.address }}<br>
+        {{ customer.city }}, {{ customer.state }} {{ customer.pincode }}
+      </div>
+      {% endif %}
+      {% if customer.notes %}
+      <div style="margin-top:16px;">
+        <strong>Notes:</strong><br>
+        {{ customer.notes }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Quick Stats</span></div>
+    <div style="padding:24px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="text-align:center;">
+          <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--accent);">{{ customer.total_orders or 0 }}</div>
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;">Total Orders</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--info);">{{ bookings|length }}</div>
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;">Test Drives</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card section-gap">
+  <div class="card-header"><span class="card-title">Order History</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Order #</th><th>Vehicle</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>
+      {% for o in orders %}
+      <tr>
+        <td style="font-weight:600;">{{ o.order_no }}</td>
+        <td>{{ o.make }} {{ o.model }}</td>
+        <td>₹{{ "{:,.0f}".format(o.total_price|float) }}</td>
+        <td>
+          {% if o.status=='completed' %}<span class="badge badge-green">{{ o.status }}</span>
+          {% else %}<span class="badge badge-amber">{{ o.status }}</span>{% endif %}
+        </td>
+        <td>{{ o.sold_at.strftime('%d %b %Y') if o.sold_at else '—' }}</td>
+      </tr>
+      {% else %}<tr><td colspan="5"><div class="empty-state"><i class="fa fa-shopping-cart"></i><p>No orders yet</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">Test Drive Bookings</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Vehicle</th><th>Scheduled</th><th>Status</th><th>Location</th></tr></thead>
+      <tbody>
+      {% for b in bookings %}
+      <tr>
+        <td>{{ b.make }} {{ b.model }}</td>
+        <td>{{ b.scheduled_for.strftime('%d %b %Y %H:%M') if b.scheduled_for else '—' }}</td>
+        <td>
+          {% if b.status=='completed' %}<span class="badge badge-green">{{ b.status }}</span>
+          {% elif b.status=='confirmed' %}<span class="badge badge-blue">{{ b.status }}</span>
+          {% else %}<span class="badge badge-amber">{{ b.status }}</span>{% endif %}
+        </td>
+        <td>{{ b.test_drive_location or '—' }}</td>
+      </tr>
+      {% else %}<tr><td colspan="4"><div class="empty-state"><i class="fa fa-calendar"></i><p>No bookings</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block page_title %}Add Booking{% endblock %}
+{% block topbar_actions %}<a href="{{ url_for('bookings') }}" class="btn btn-secondary"><i class="fa fa-arrow-left"></i> Back</a>{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><span class="card-title">Create Test Drive Booking</span></div>
+  <form method="POST" style="padding:24px;">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>User *</label>
+        <select name="user_id" required onchange="loadUserDetails(this.value)">
+          <option value="">Select User</option>
+          {% for u in users %}
+          <option value="{{ u.id }}">{{ u.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Vehicle *</label>
+        <select name="vehicle_id" required onchange="loadVehicleDetails(this.value)">
+          <option value="">Select Vehicle</option>
+          {% for v in vehicles %}
+          <option value="{{ v.id }}">{{ v.make }} {{ v.model }} ({{ v.year }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Scheduled Date & Time *</label>
+        <input type="datetime-local" name="scheduled_for" required>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select name="status">
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Test Drive Location</label>
+        <input name="test_drive_location" placeholder="Showroom address or location">
+      </div>
+      <div class="form-group">
+        <label>Preferred Contact</label>
+        <input name="preferred_contact" placeholder="Phone or email">
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:16px;">
+      <label>Notes</label>
+      <textarea name="note" rows="3" placeholder="Additional notes or special requests"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:24px;">
+      <button type="submit" class="btn btn-primary"><i class="fa fa-calendar-check"></i> Create Booking</button>
+      <a href="{{ url_for('bookings') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

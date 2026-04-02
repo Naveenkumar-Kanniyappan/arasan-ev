@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block page_title %}Purchase Orders{% endblock %}
+{% block topbar_actions %}
+<form method="GET" style="display:flex;gap:8px;">
+  <select name="status" onchange="this.form.submit()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);">
+    <option value="">All Status</option>
+    {% for s in ['ordered','received','partially_received','cancelled'] %}<option value="{{ s }}" {% if status==s %}selected{% endif %}>{{ s.replace('_',' ').title() }}</option>{% endfor %}
+  </select>
+</form>
+<a href="{{ url_for('add_purchase_order') }}" class="btn btn-primary"><i class="fa fa-plus"></i> New PO</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>PO No</th><th>Supplier</th><th>Vehicle</th><th>Qty</th><th>Unit Cost</th><th>Total</th><th>Expected</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for o in orders %}
+      <tr>
+        <td><strong style="font-size:12px;">{{ o.purchase_no }}</strong></td>
+        <td>{{ o.supplier_name or '—' }}</td>
+        <td>{{ o.make }} {{ o.model }}</td>
+        <td>{{ o.qty }}</td>
+        <td>₹{{ "{:,.0f}".format(o.unit_cost|float) }}</td>
+        <td><strong>₹{{ "{:,.0f}".format(o.total_cost|float) }}</strong></td>
+        <td style="font-size:12px;color:var(--muted);">{{ o.expected_delivery.strftime('%d %b %Y') if o.expected_delivery else '—' }}</td>
+        <td>
+          {% if o.status=='received' %}<span class="badge badge-green">Received</span>
+          {% elif o.status=='ordered' %}<span class="badge badge-amber">Ordered</span>
+          {% elif o.status=='partially_received' %}<span class="badge badge-blue">Partial</span>
+          {% else %}<span class="badge badge-red">Cancelled</span>{% endif %}
+        </td>
+        <td>
+          {% if o.status=='ordered' %}
+          <form method="POST" action="{{ url_for('receive_purchase_order', pid=o.id) }}" onsubmit="return confirm('Mark as received?')">
+            <button type="submit" class="btn btn-success btn-sm"><i class="fa fa-truck-ramp-box"></i> Receive</button>
+          </form>
+          {% else %}
+          <span style="color:var(--muted);font-size:12px;">{{ o.received_at.strftime('%d %b') if o.received_at else '—' }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="9"><div class="empty-state"><i class="fa fa-cart-flatbed"></i><p>No purchase orders</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

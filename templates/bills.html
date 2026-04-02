@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block page_title %}Bills{% endblock %}
+{% block topbar_actions %}
+<form method="GET" style="display:flex;gap:8px;">
+  <select name="status" onchange="this.form.submit()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);">
+    <option value="">All Status</option>
+    {% for s in ['unpaid','paid','overdue'] %}<option value="{{ s }}" {% if status==s %}selected{% endif %}>{{ s.title() }}</option>{% endfor %}
+  </select>
+</form>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Bill No</th><th>Supplier</th><th>PO No</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for b in bills %}
+      <tr>
+        <td><strong style="font-size:12px;">{{ b.bill_no }}</strong></td>
+        <td>{{ b.supplier_name or '—' }}</td>
+        <td style="font-size:12px;color:var(--muted);">{{ b.purchase_no or '—' }}</td>
+        <td><strong>₹{{ "{:,.0f}".format(b.amount|float) }}</strong></td>
+        <td style="font-size:13px;">{{ b.due_at.strftime('%d %b %Y') if b.due_at else '—' }}</td>
+        <td>
+          {% if b.status=='paid' %}<span class="badge badge-green">Paid</span>
+          {% elif b.status=='overdue' %}<span class="badge badge-red">Overdue</span>
+          {% else %}<span class="badge badge-amber">Unpaid</span>{% endif %}
+        </td>
+        <td>
+          {% if b.status != 'paid' %}
+          <form method="POST" action="{{ url_for('pay_bill', bid=b.id) }}" onsubmit="return confirm('Mark as paid?')">
+            <button type="submit" class="btn btn-success btn-sm"><i class="fa fa-check"></i> Mark Paid</button>
+          </form>
+          {% else %}
+          <span style="color:var(--muted);font-size:12px;">Settled</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="7"><div class="empty-state"><i class="fa fa-file-invoice"></i><p>No bills</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

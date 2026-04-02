@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block page_title %}Inventory Management{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Vehicle</th><th>Category</th><th>Stock</th><th>Min Stock</th><th>Location</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for i in inventory %}
+      <tr>
+        <td>
+          <strong>{{ i.make }} {{ i.model }}</strong>
+          <div style="font-size:11px;color:var(--muted);">{{ i.year }}</div>
+        </td>
+        <td><span class="badge badge-blue">{{ i.category }}</span></td>
+        <td>
+          <span class="badge {% if (i.stock or 0) <= (i.min_stock or 1) %}badge-red{% elif (i.stock or 0) <= ((i.min_stock or 1) * 2) %}badge-amber{% else %}badge-green{% endif %}">{{ i.stock or 0 }}</span>
+        </td>
+        <td>{{ i.min_stock or 1 }}</td>
+        <td>{{ i.warehouse_location or 'Main Warehouse' }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('update_inventory', vid=i.vid) }}" style="display:flex;gap:8px;align-items:center;">
+            <input type="number" name="stock" value="{{ i.stock or 0 }}" min="0" style="width:80px;" required>
+            <input type="number" name="min_stock" value="{{ i.min_stock or 1 }}" min="0" style="width:60px;" required>
+            <input name="warehouse_location" value="{{ i.warehouse_location or '' }}" placeholder="Location" style="width:120px;">
+            <button type="submit" class="btn btn-secondary btn-sm"><i class="fa fa-save"></i></button>
+          </form>
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="6"><div class="empty-state"><i class="fa fa-warehouse"></i><p>No inventory data</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

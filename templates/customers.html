@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block page_title %}Customers Directory{% endblock %}
+{% block topbar_actions %}
+<div style="display:flex; gap:16px; align-items:center;">
+  <form method="GET" id="searchForm" style="display:flex;gap:8px;" onsubmit="simulateSearch(event)">
+    <div class="search-bar">
+      <i class="fa fa-search" style="color:var(--primary);"></i>
+      <input name="q" value="{{ q }}" placeholder="Search by name, email, phone..." style="border-radius: 99px; border-color: var(--border); padding-left: 36px; padding-right: 16px; width: 250px; background:var(--bg);">
+    </div>
+    <button type="submit" class="btn btn-secondary btn-sm" style="border-radius:99px;" id="searchBtn"><i class="fa fa-arrow-right"></i></button>
+  </form>
+  <a href="{{ url_for('add_customer') }}" class="btn btn-primary" style="box-shadow: 0 4px 12px rgba(37,99,235,0.25);"><i class="fa fa-plus"></i> Add New Customer</a>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card" style="box-shadow: var(--shadow-sm); border: none;">
+  <div class="table-wrap">
+    <table id="dataTable" style="transition: opacity 0.3s ease;">
+      <thead>
+        <tr>
+          <th style="width:50px;">ID</th>
+          <th>Customer Info</th>
+          <th>Contact Details</th>
+          <th>Location</th>
+          <th>Gender</th>
+          <th>Total Orders</th>
+          <th>Joined Date</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for c in customers %}
+      <tr>
+        <td style="color:var(--text-muted);font-size:12px;font-weight:600;">#{{ c.id }}</td>
+        <td>
+          <div style="font-weight:700; color:var(--text);">{{ c.name }}</div>
+          <div style="font-size:11px;color:var(--text-muted); margin-top:2px;"><i class="fas fa-user-circle"></i> {{ c.username or 'Guest / No Login' }}</div>
+        </td>
+        <td>
+          <div style="font-weight:500;"><i class="far fa-envelope" style="color:var(--text-muted);margin-right:4px;"></i> {{ c.email or '—' }}</div>
+          <div style="font-size:12px;color:var(--text-muted); margin-top:2px;"><i class="fas fa-phone-alt" style="margin-right:4px;"></i> {{ c.phone or '—' }}</div>
+        </td>
+        <td><i class="fas fa-map-marker-alt" style="color:var(--primary);margin-right:4px;"></i> {{ c.city or '—' }}</td>
+        <td>{% if c.gender %}<span class="badge badge-gray">{{ c.gender }}</span>{% else %}—{% endif %}</td>
+        <td>
+          <span class="badge {% if c.total_orders > 0 %}badge-green{% else %}badge-gray{% endif %}">
+            <i class="fas fa-shopping-bag"></i> {{ c.total_orders }}
+          </span>
+        </td>
+        <td style="font-size:12px;color:var(--text-muted); font-weight:500;">
+          <i class="far fa-calendar-alt"></i> {{ c.created_at.strftime('%d %b %Y') if c.created_at else '—' }}
+        </td>
+        <td style="text-align: right;">
+          <div style="display:flex;gap:8px; justify-content: flex-end;">
+            <a href="{{ url_for('customer_detail', cid=c.id) }}" class="btn btn-secondary btn-sm" title="View Profile"><i class="fa fa-eye"></i></a>
+            <a href="{{ url_for('edit_customer', cid=c.id) }}" class="btn btn-primary btn-sm" title="Edit Customer"><i class="fa fa-pen"></i></a>
+            <form method="POST" action="{{ url_for('delete_customer', cid=c.id) }}" onsubmit="return confirm('WARNING: Are you sure you want to permanently delete this customer?')">
+              <button type="submit" class="btn btn-danger btn-sm" title="Delete Customer"><i class="fa fa-trash"></i></button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="8">
+          <div class="empty-state">
+            <i class="fa fa-user-times" style="color:var(--border);"></i>
+            <p style="font-weight:600; color:var(--text-muted); margin-top: 12px;">No customers found matching your criteria</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% block scripts %}
+<script>
+function simulateSearch(e) {
+  e.preventDefault();
+  const form = document.getElementById('searchForm');
+  const table = document.getElementById('dataTable');
+  const btn = document.getElementById('searchBtn');
+  
+  if(window.showToast) window.showToast('Searching database...', 'info');
+  table.style.opacity = '0.3';
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  
+  setTimeout(() => {
+    form.submit();
+  }, 400);
+}
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block page_title %}Bookings{% endblock %}
+{% block topbar_actions %}
+<form method="GET" style="display:flex;gap:8px;">
+  <select name="status" onchange="this.form.submit()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);">
+    <option value="">All Status</option>
+    {% for s in ['pending','confirmed','cancelled','completed'] %}<option value="{{ s }}" {% if status==s %}selected{% endif %}>{{ s.title() }}</option>{% endfor %}
+  </select>
+</form>
+<a href="{{ url_for('add_booking') }}" class="btn btn-primary"><i class="fa fa-plus"></i> New Booking</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Customer</th><th>Vehicle</th><th>Scheduled</th><th>Test Drive Location</th><th>Contact Pref</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for b in bookings %}
+      <tr>
+        <td style="color:var(--muted);font-size:12px;">{{ b.id }}</td>
+        <td>{{ b.username }}</td>
+        <td><strong>{{ b.make }}</strong> {{ b.model }}<br><span class="badge badge-blue" style="margin-top:2px;">{{ b.category }}</span></td>
+        <td style="font-size:13px;">{{ b.scheduled_for.strftime('%d %b %Y %H:%M') if b.scheduled_for else 'TBD' }}</td>
+        <td style="font-size:13px;">{{ b.test_drive_location or '—' }}</td>
+        <td><span class="badge badge-blue">{{ b.preferred_contact or 'phone' }}</span></td>
+        <td>
+          {% if b.status=='confirmed' %}<span class="badge badge-green">Confirmed</span>
+          {% elif b.status=='pending' %}<span class="badge badge-amber">Pending</span>
+          {% elif b.status=='completed' %}<span class="badge badge-gray">Completed</span>
+          {% else %}<span class="badge badge-red">Cancelled</span>{% endif %}
+        </td>
+        <td>
+          <form method="POST" action="{{ url_for('update_booking', bid=b.id) }}" style="display:flex;gap:4px;">
+            <select name="status" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-size:12px;">
+              {% for s in ['pending','confirmed','completed','cancelled'] %}<option value="{{ s }}" {% if b.status==s %}selected{% endif %}>{{ s.title() }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="btn btn-secondary btn-sm"><i class="fa fa-check"></i></button>
+          </form>
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="8"><div class="empty-state"><i class="fa fa-calendar-check"></i><p>No bookings</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+      <div class="form-group"><label>Status</label>
+        <select name="status">

@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% block page_title %}Dashboard{% endblock %}
+{% block topbar_actions %}
+<div style="display:flex; align-items:center; gap:8px;">
+  <span style="font-size:12px;color:var(--text-muted);font-weight:600;"><i class="fas fa-sync fa-spin"></i> Live Sync Active</span>
+  <span style="font-size:12px;color:var(--text-muted);" id="now"></span>
+</div>
+{% endblock %}
+{% block content %}
+<div class="stats-grid">
+  <div class="stat-card green">
+    <div class="stat-label">Total Vehicles In Stock</div>
+    <div class="stat-value" id="val-vehicles">{{ total_vehicles }}</div>
+    <i class="fa fa-car-side stat-icon"></i>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-label">Total Customers</div>
+    <div class="stat-value" id="val-customers">{{ total_customers }}</div>
+    <i class="fa fa-user-friends stat-icon"></i>
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-label">Total Revenue</div>
+    <div class="stat-value">₹{{ "{:,.0f}".format(total_sales|float) }}</div>
+    <i class="fa fa-chart-line stat-icon"></i>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-label">Pending Test Drives</div>
+    <div class="stat-value">{{ pending_bookings }}</div>
+    <i class="fa fa-calendar-alt stat-icon"></i>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-label">Overdue Invoices</div>
+    <div class="stat-value">{{ overdue_invoices }}</div>
+    <i class="fa fa-file-invoice-dollar stat-icon"></i>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-label">Pending POs</div>
+    <div class="stat-value">{{ pending_purchases }}</div>
+    <i class="fa fa-truck-loading stat-icon"></i>
+  </div>
+</div>
+
+<div class="grid-2 section-gap">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-bolt" style="color:var(--warning); margin-right:8px;"></i> Recent Completed Orders</span>
+      <a href="{{ url_for('sales_orders') }}" class="btn btn-secondary btn-sm">View All Orders</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Order No</th><th>Customer</th><th>Vehicle</th><th>Amount</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for o in recent_orders %}
+        <tr>
+          <td><span style="font-weight:600;font-size:13px;color:var(--primary);">{{ o.order_no }}</span></td>
+          <td>{{ o.customer or '—' }}</td>
+          <td><strong>{{ o.make }}</strong> {{ o.model }}</td>
+          <td>₹{{ "{:,.0f}".format(o.total_price|float) }}</td>
+          <td>
+            {% if o.status=='completed' %}<span class="badge badge-green">{{ o.status }}</span>
+            {% elif o.status=='pending' %}<span class="badge badge-amber">{{ o.status }}</span>
+            {% else %}<span class="badge badge-red">{{ o.status }}</span>{% endif %}
+          </td>
+        </tr>
+        {% else %}<tr><td colspan="5"><div class="empty-state"><i class="fa fa-inbox"></i><p>No recent orders found</p></div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-exclamation-triangle" style="color:var(--danger); margin-right:8px;"></i> Low Stock Alert</span>
+      <a href="{{ url_for('inventory') }}" class="btn btn-secondary btn-sm">Manage Inventory</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Vehicle Model</th><th>Category</th><th>Current Stock</th><th>Unit Price</th></tr></thead>
+        <tbody>
+        {% for v in low_stock %}
+        <tr>
+          <td><strong>{{ v.make }}</strong> {{ v.model }}</td>
+          <td><span class="badge badge-gray">{{ v.category }}</span></td>
+          <td>
+            <span class="badge {% if v.stock==0 %}badge-red{% else %}badge-amber{% endif %}">
+              <i class="fas {% if v.stock==0 %}fa-times-circle{% else %}fa-exclamation-circle{% endif %}"></i> {{ v.stock }} units
+            </span>
+          </td>
+          <td>₹{{ "{:,.0f}".format(v.price|float) }}</td>
+        </tr>
+        {% else %}<tr><td colspan="4"><div class="empty-state"><i class="fa fa-check-circle" style="color:var(--success);"></i><p>Inventory is fully stocked</p></div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Revenue Trend (Last 6 Months)</span></div>
+    <div style="padding: 24px;">
+      <canvas id="revenueChart" height="240"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Vehicle Sales Distribution</span></div>
+    <div style="padding: 24px;">
+      <canvas id="catChart" height="240"></canvas>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// Live clock
+setInterval(() => {
+  document.getElementById('now').textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+}, 1000);
+document.getElementById('now').textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+
+// Clean Chart Config
+Chart.defaults.font.family = "'Inter', 'DM Sans', sans-serif";
+Chart.defaults.color = '#64748b';
+
+// Render Revenue Line Chart
+const months = {{ chart_data | map(attribute='month') | list | tojson }};
+const revenues = {{ chart_data | map(attribute='revenue') | list | tojson }};
+const ctx = document.getElementById('revenueChart').getContext('2d');
+const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+gradient.addColorStop(0, 'rgba(37, 99, 235, 0.2)');
+gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
+
+new Chart(ctx, {
+  type: 'line',
+  data: { 
+    labels: months, 
+    datasets: [{ 
+      label: 'Revenue (₹)', 
+      data: revenues,
+      borderColor: '#2563eb', 
+      backgroundColor: gradient, 
+      fill: true,
+      tension: 0.4, 
+      pointBackgroundColor: '#ffffff',
+      pointBorderColor: '#2563eb',
+      pointBorderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6
+    }] 
+  },
+  options: { 
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { 
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#0f172a',
+        padding: 12,
+        titleFont: { size: 13, weight: 'bold' },
+        bodyFont: { size: 14 }
+      }
+    }, 
+    scales: {
+      y: { border: {display: false}, grid: { color: '#e2e8f0', drawTicks: false }, ticks: { padding: 10, callback: v => '₹' + (v/1000).toFixed(0) + 'k' } },
+      x: { border: {display: false}, grid: { display: false }, ticks: { padding: 10 } } 
+    } 
+  }
+});
+
+// Render Category Doughnut Chart
+const cats = {{ category_data | map(attribute='category') | list | tojson }};
+const catCnts = {{ category_data | map(attribute='cnt') | list | tojson }};
+new Chart(document.getElementById('catChart'), {
+  type: 'doughnut',
+  data: { 
+    labels: cats, 
+    datasets: [{ 
+      data: catCnts,
+      backgroundColor: ['#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899'],
+      borderWidth: 0,
+      hoverOffset: 4
+    }] 
+  },
+  options: { 
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { 
+      legend: { 
+        position: 'right', 
+        labels: { padding: 20, usePointStyle: true, boxWidth: 8, font: {size: 13} } 
+      },
+      tooltip: {
+        backgroundColor: '#0f172a',
+        padding: 12
+      }
+    }, 
+    cutout: '70%' 
+  }
+});
+</script>
+{% endblock %}

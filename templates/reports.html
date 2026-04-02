@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block page_title %}Reports & Analytics{% endblock %}
+{% block topbar_actions %}<button onclick="window.print()" class="btn btn-secondary"><i class="fa fa-download"></i> Export</button>{% endblock %}
+{% block content %}
+<div class="stats-grid" style="margin-bottom:24px;">
+  <div class="stat-card green">
+    <div class="stat-label">Total Revenue</div>
+    <div class="stat-value">₹{{ "{:,.0f}".format(monthly_sales|sum(attribute='revenue')|float) }}</div>
+    <i class="fa fa-indian-rupee-sign stat-icon"></i>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-label">Total Orders</div>
+    <div class="stat-value">{{ monthly_sales|sum(attribute='orders') }}</div>
+    <i class="fa fa-file-invoice-dollar stat-icon"></i>
+  </div>
+</div>
+
+<div class="grid-2 section-gap">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Monthly Revenue</span></div>
+    <canvas id="monthChart" height="180"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Sales by Category</span></div>
+    <canvas id="catChart" height="180"></canvas>
+  </div>
+</div>
+
+<div class="grid-2 section-gap">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Top Vehicles by Sales</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Vehicle</th><th>Units Sold</th><th>Revenue</th></tr></thead>
+        <tbody>
+        {% for v in top_vehicles %}
+        <tr>
+          <td><strong>{{ v.make }} {{ v.model }}</strong></td>
+          <td><span class="badge badge-blue">{{ v.sold_count }}</span></td>
+          <td>₹{{ "{:,.0f}".format(v.total_revenue|float) }}</td>
+        </tr>
+        {% else %}<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">No data</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Top Customers</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Customer</th><th>Orders</th><th>Total Spent</th></tr></thead>
+        <tbody>
+        {% for c in top_customers %}
+        <tr>
+          <td><strong>{{ c.name or '—' }}</strong><div style="font-size:11px;color:var(--muted);">{{ c.email or '' }}</div></td>
+          <td><span class="badge badge-blue">{{ c.orders }}</span></td>
+          <td>₹{{ "{:,.0f}".format(c.spent|float) }}</td>
+        </tr>
+        {% else %}<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">No data</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card section-gap">
+  <div class="card-header"><span class="card-title">Payment Method Breakdown</span></div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;">
+    {% for p in payment_breakdown %}
+    <div style="background:var(--surface2);border-radius:10px;padding:16px 20px;flex:1;min-width:150px;">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">{{ (p.payment_method or 'cash').replace('_',' ').title() }}</div>
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin:6px 0;">{{ p.cnt }}</div>
+      <div style="font-size:13px;color:var(--accent);">₹{{ "{:,.0f}".format(p.total|float) }}</div>
+    </div>
+    {% else %}<div style="color:var(--muted);padding:20px;">No data available</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">Monthly Sales Summary</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Month</th><th>Orders</th><th>Revenue</th></tr></thead>
+      <tbody>
+      {% for m in monthly_sales %}
+      <tr>
+        <td style="font-weight:600;">{{ m.month }}</td>
+        <td><span class="badge badge-blue">{{ m.orders }}</span></td>
+        <td>₹{{ "{:,.0f}".format(m.revenue|float) }}</td>
+      </tr>
+      {% else %}<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">No data</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+Chart.defaults.color = '#64748b';
+const months = {{ monthly_sales|map(attribute='month')|list|tojson }};
+const revs = {{ monthly_sales|map(attribute='revenue')|list|tojson }};
+new Chart(document.getElementById('monthChart'), {
+  type: 'bar',
+  data: { labels: months, datasets: [{ label: 'Revenue', data: revs,
+    backgroundColor: '#00d4aa40', borderColor: '#00d4aa', borderWidth: 2, borderRadius: 6 }] },
+  options: { plugins: { legend: { display: false } },
+    scales: { y: { grid: { color: '#1f2d45' }, ticks: { callback: v => '₹'+v/1000+'k' } }, x: { grid: { color: '#1f2d45' } } } }
+});
+const cats = {{ category_sales|map(attribute='category')|list|tojson }};
+const catVals = {{ category_sales|map(attribute='sales')|list|tojson }};
+new Chart(document.getElementById('catChart'), {
+  type: 'pie',
+  data: { labels: cats, datasets: [{ data: catVals,
+    backgroundColor: ['#00d4aa','#3b82f6','#f59e0b','#ef4444','#8b5cf6'], borderWidth: 0 }] },
+  options: { plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true } } } }
+});
+</script>
+{% endblock %}

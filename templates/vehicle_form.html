@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ action }} Vehicle{% endblock %}
+{% block topbar_actions %}<a href="{{ url_for('vehicles') }}" class="btn btn-secondary"><i class="fa fa-arrow-left"></i> Back to Inventory</a>{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 900px; margin: 0 auto;">
+  <div class="card-header"><span class="card-title">{{ action }} EV Vehicle Profile</span></div>
+  <form method="POST" style="padding:32px;">
+    <div style="margin-bottom:32px;">
+      <div style="font-size:13px;color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px; border-bottom: 2px solid var(--border); padding-bottom: 8px;"><i class="fa fa-car-side"></i> General Information</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Brand Make <span style="color:var(--danger)">*</span></label><input name="make" value="{{ vehicle.make if vehicle else '' }}" required placeholder="e.g. Tesla, Nissan..."></div>
+        <div class="form-group"><label>Model Name <span style="color:var(--danger)">*</span></label><input name="model" value="{{ vehicle.model if vehicle else '' }}" required placeholder="e.g. Model 3, Leaf..."></div>
+        <div class="form-group"><label>Manufacturing Year <span style="color:var(--danger)">*</span></label><input type="number" name="year" value="{{ vehicle.year if vehicle else 2024 }}" min="2000" max="2030" required></div>
+        <div class="form-group"><label>Category</label>
+          <select name="category">
+            {% for c in ['sedan','hatchback','suv','truck','van','coupe'] %}
+            <option value="{{ c }}" {% if vehicle and vehicle.category==c %}selected{% endif %}>{{ c.title() }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group"><label>Color</label><input name="color" value="{{ vehicle.color if vehicle and vehicle.color else '' }}" placeholder="e.g. Pearl White, Onyx Black..."></div>
+        <div class="form-group"><label>Listing Status</label>
+          <select name="status">
+            {% for s in ['available','reserved','sold'] %}
+            <option value="{{ s }}" {% if vehicle and vehicle.status==s %}selected{% endif %}>{{ s.title() }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group"><label>Unit Price (₹) <span style="color:var(--danger)">*</span></label><input type="number" step="0.01" name="price" value="{{ vehicle.price if vehicle else '' }}" required></div>
+        <div class="form-group"><label>Initial Stock</label><input type="number" name="stock" value="{{ vehicle.stock if vehicle else 0 }}" min="0"></div>
+        <div class="form-group"><label>Image URL</label><input name="image_url" id="imgUrl" value="{{ vehicle.image_url if vehicle and vehicle.image_url else '' }}" placeholder="https://..." onblur="previewImage()"></div>
+      </div>
+      <div id="imgPreviewWrapper" style="display:{% if vehicle and vehicle.image_url %}block{% else %}none{% endif %}; margin-top: 16px;">
+         <label style="font-size: 13px; font-weight: 600; margin-bottom: 8px; display:block;">Image Preview</label>
+         <img id="imgPreview" src="{{ vehicle.image_url if vehicle and vehicle.image_url else '' }}" alt="Preview" style="max-width: 200px; border-radius: var(--radius-md); border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
+      </div>
+    </div>
+
+    <div style="margin-bottom:32px;">
+      <div style="font-size:13px;color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px; border-bottom: 2px solid var(--border); padding-bottom: 8px;"><i class="fa fa-bolt"></i> EV Technical Specifications</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Range per charge (km) <span style="color:var(--danger)">*</span></label><input type="number" name="range_km" value="{{ vehicle.range_km if vehicle else '' }}" required placeholder="e.g. 495"></div>
+        <div class="form-group"><label>Battery Capacity (kWh)</label><input type="number" step="0.1" name="battery_capacity_kwh" value="{{ vehicle.battery_capacity_kwh if vehicle and vehicle.battery_capacity_kwh else '' }}" placeholder="e.g. 75.0"></div>
+        <div class="form-group"><label>Charging Time (0-100% in hrs)</label><input type="number" step="0.1" name="charging_time_hrs" value="{{ vehicle.charging_time_hrs if vehicle and vehicle.charging_time_hrs else '' }}" placeholder="e.g. 8.0"></div>
+        <div class="form-group"><label>Top Speed (km/h)</label><input type="number" name="top_speed_kmh" value="{{ vehicle.top_speed_kmh if vehicle and vehicle.top_speed_kmh else '' }}" placeholder="e.g. 250"></div>
+        <div class="form-group"><label>Warranty (years)</label><input type="number" name="warranty_years" value="{{ vehicle.warranty_years if vehicle and vehicle.warranty_years else 3 }}" min="1" max="10"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:16px; padding-top: 24px; border-top: 1px solid var(--border);">
+      <button type="submit" class="btn btn-primary" style="flex:1;" onclick="simulateSubmit(this)"><i class="fa fa-save"></i> Save {{ action }} Changes</button>
+      <a href="{{ url_for('vehicles') }}" class="btn btn-secondary">Discard</a>
+    </div>
+  </form>
+</div>
+{% block scripts %}
+<script>
+function previewImage() {
+    const url = document.getElementById('imgUrl').value;
+    const previewWrapper = document.getElementById('imgPreviewWrapper');
+    const preview = document.getElementById('imgPreview');
+    if (url) {
+        preview.src = url;
+        previewWrapper.style.display = 'block';
+        if(window.showToast) window.showToast('Fetching image preview...', 'info');
+    } else {
+        previewWrapper.style.display = 'none';
+        preview.src = '';
+    }
+}
+
+function simulateSubmit(btn) {
+  // Only override if form is valid
+  const form = btn.closest('form');
+  if (form.checkValidity()) {
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving Profile...';
+  }
+}
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block page_title %}Invoices{% endblock %}
+{% block topbar_actions %}
+<form method="GET" style="display:flex;gap:8px;">
+  <select name="status" onchange="this.form.submit()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);">
+    <option value="">All Status</option>
+    {% for s in ['draft','issued','paid','overdue'] %}<option value="{{ s }}" {% if status==s %}selected{% endif %}>{{ s.title() }}</option>{% endfor %}
+  </select>
+</form>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Invoice No</th><th>Order No</th><th>Customer</th><th>Sub Total</th><th>GST (18%)</th><th>Total</th><th>Status</th><th>Issued</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for i in invoices %}
+      <tr>
+        <td><strong style="font-size:12px;">{{ i.invoice_no }}</strong></td>
+        <td style="font-size:12px;color:var(--muted);">{{ i.order_no }}</td>
+        <td>{{ i.customer_name or '—' }}</td>
+        <td>₹{{ "{:,.0f}".format(i.sub_total|float) }}</td>
+        <td>₹{{ "{:,.0f}".format(i.tax|float) }}</td>
+        <td><strong>₹{{ "{:,.0f}".format(i.total|float) }}</strong></td>
+        <td>
+          {% if i.status=='paid' %}<span class="badge badge-green">Paid</span>
+          {% elif i.status=='issued' %}<span class="badge badge-blue">Issued</span>
+          {% elif i.status=='overdue' %}<span class="badge badge-red">Overdue</span>
+          {% else %}<span class="badge badge-gray">Draft</span>{% endif %}
+        </td>
+        <td style="font-size:12px;color:var(--muted);">{{ i.issued_at.strftime('%d %b %Y') if i.issued_at else '—' }}</td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <a href="{{ url_for('view_invoice', iid=i.id) }}" class="btn btn-secondary btn-sm"><i class="fa fa-eye"></i></a>
+            {% if i.status != 'paid' %}
+            <form method="POST" action="{{ url_for('update_invoice', iid=i.id) }}" style="display:inline;">
+              <input type="hidden" name="status" value="paid">
+              <button type="submit" class="btn btn-success btn-sm"><i class="fa fa-check"></i> Pay</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="9"><div class="empty-state"><i class="fa fa-receipt"></i><p>No invoices</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

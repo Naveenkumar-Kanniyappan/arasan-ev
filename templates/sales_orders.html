@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block page_title %}Sales Orders Directory{% endblock %}
+{% block topbar_actions %}
+<div style="display:flex; gap:16px; align-items:center;">
+  <form method="GET" id="filterForm" style="display:flex;gap:12px;align-items:center;">
+    <select name="status" onchange="submitFilter()" style="background:var(--bg); border:1px solid var(--border); border-radius:99px; padding:8px 16px; color:var(--text); font-size:13px; font-weight:500; outline:none; cursor:pointer;">
+      <option value="">All Status</option>
+      {% for s in ['pending','completed','cancelled'] %}<option value="{{ s }}" {% if status==s %}selected{% endif %}>{{ s.title() }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="btn btn-secondary btn-sm" id="searchBtn" style="border-radius:99px;" onclick="submitFilter(event)"><i class="fa fa-arrow-right"></i></button>
+  </form>
+  <a href="{{ url_for('add_sales_order') }}" class="btn btn-primary" style="box-shadow: 0 4px 12px rgba(37,99,235,0.25);"><i class="fa fa-plus"></i> New Sales Order</a>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card" style="box-shadow: var(--shadow-sm); border: none;">
+  <div class="table-wrap">
+    <table id="dataTable" style="transition: opacity 0.3s ease;">
+      <thead>
+        <tr>
+          <th>Order Ref No.</th>
+          <th>Customer Info</th>
+          <th>Vehicle Profile</th>
+          <th style="text-align: center;">Quantity</th>
+          <th style="text-align: right;">Discount</th>
+          <th style="text-align: right;">Total Amount</th>
+          <th>Payment Type</th>
+          <th>Order Status</th>
+          <th>Sold Date</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for o in orders %}
+      <tr>
+        <td>
+          <strong style="font-size:13px; color:var(--primary); background: var(--surface2); padding: 4px 8px; border-radius: 4px;">{{ o.order_no }}</strong>
+        </td>
+        <td>
+          <div style="font-weight:700; color:var(--text);"><i class="far fa-user-circle" style="color:var(--text-muted);margin-right:2px;"></i> {{ o.customer_name or '—' }}</div>
+        </td>
+        <td>
+          <div style="font-weight:600;"><i class="fa fa-car-side" style="color:var(--accent);margin-right:4px;"></i> {{ o.make }} {{ o.model }}</div>
+        </td>
+        <td style="text-align: center;">
+          <span class="badge badge-gray" style="font-weight:800;">x{{ o.qty }}</span>
+        </td>
+        <td style="text-align: right; color:var(--danger); font-size:13px; font-weight:500;">
+          {% if o.discount %}-₹{{ "{:,.0f}".format(o.discount|float) }}{% else %}—{% endif %}
+        </td>
+        <td style="text-align: right; font-size: 15px;">
+          <strong style="color:var(--success);">₹{{ "{:,.0f}".format(o.total_price|float) }}</strong>
+        </td>
+        <td>
+          <span class="badge" style="background:var(--surface2); color:var(--text);"><i class="fas fa-money-bill-wave" style="margin-right:4px;"></i> {{ o.payment_method or 'cash' }}</span>
+        </td>
+        <td>
+          {% if o.status=='completed' %}<span class="badge badge-green"><i class="fas fa-check-circle" style="margin-right:4px;"></i> Completed</span>
+          {% elif o.status=='pending' %}<span class="badge badge-amber"><i class="far fa-clock" style="margin-right:4px;"></i> Pending</span>
+          {% else %}<span class="badge badge-red"><i class="fas fa-times-circle" style="margin-right:4px;"></i> Cancelled</span>{% endif %}
+        </td>
+        <td style="font-size:12px;color:var(--text-muted); font-weight:500;">
+          <i class="far fa-calendar-alt"></i> {{ o.sold_at.strftime('%d %b %Y') if o.sold_at else '—' }}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="9">
+          <div class="empty-state">
+            <i class="fa fa-file-invoice-dollar" style="color:var(--border);"></i>
+            <p style="font-weight:600; color:var(--text-muted); margin-top: 12px;">No sales orders match your criteria</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% block scripts %}
+<script>
+function submitFilter(e) {
+  if (e) e.preventDefault();
+  const form = document.getElementById('filterForm');
+  const table = document.getElementById('dataTable');
+  
+  if(window.showToast) window.showToast('Filtering sales records...', 'info');
+  table.style.opacity = '0.3';
+  
+  setTimeout(() => {
+    form.submit();
+  }, 300);
+}
+</script>
+{% endblock %}
+{% endblock %}
